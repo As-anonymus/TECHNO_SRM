@@ -1,0 +1,32 @@
+matplotlib>=3.2.2
+numpy>=1.18.5
+opencv-python-headless 
+XlsxWriter
+Pillow>=7.1.2
+PyYAML>=5.3.1
+requests>=2.23.0
+streamlit
+scipy>=1.4.1  # Google Colab version
+torch==1.13.1
+torchvision==0.14.1
+zipp==3.11.0
+tqdm>=4.41.0
+protobuf<4.21.3  # https://github.com/ultralytics/yolov5/issues/8012
+#Flask==2.2.0
+#gunicorn==20.1.0
+#Werkzeug==2.2.1
+
+# Logging -------------------------------------
+#tensorboard>=2.4.1
+# wandb
+
+# Plotting ------------------------------------
+pandas>=0.9
+seaborn>=0.11.0
+
+
+# Extras --------------------------------------
+ipython  # interactive notebook
+psutil  # system utilization
+thop>=0.1.0  # FLOPs computation
+albumentations>=1.0.3
