@@ -38,41 +38,45 @@ def image_dt(uploaded_file,model):
     return df
 
 
-
+""" We have used pre annoted dataset from Roboflow for creating model. The dataset consists of 10675 images with 17 classes like Front-Windscreen-Damage, Headlight-Damage, Major-Rear-Bumper-Dent, 
+Rear-windscreen-Damage, RunningBoard-Dent, Sidemirror-Damage, Signlight-Damage, Taillight-Damage, bonnet-dent, doorouter-dent, fender-dent, front-bumper-dent, medium-Bodypanel-Dent, pillar-dent, 
+quaterpanel-dent, rear-bumper-dent, roof-dent. """
     
 def video_dt(uploaded_file,model):
     '''
-    Detcting damages using damage detction model on videos.
+    Detecting damages using damage detection model on videos.
     '''
-
 
     vid= cv2.VideoCapture(os.path.join("data", "videos", uploaded_file.name))     
     i=0
-    for i in range(1000): #Limited to 1000 frames for now.
+    while True:
         hasFrames,image = vid.read()
-        if i% 1 == 0:
-            re=model(image[..., ::-1])
-            print(type(re))
-            # 'cv2.imwrite("cctv2/"+"image"+str(i)+".jpg", image) '
-            # re.save(os.path.join('data/images/output','im'+str(i)+'.jpg'),'re')
-            
-            re.save(f'data/images/output/{uploaded_file.name}')    
-            shutil.copy(os.path.join(max(glob("runs/detect/*/"), key=os.path.getmtime),"image0.jpg"), os.path.join('result','im'+str(i)+'.jpg')) 
-        else:
-            pass 
+        if not hasFrames:
+            break  # no more frames to read
+        
+        if i % 1 == 0:
+            re = model(image[..., ::-1])
+            if re is not None:
+                re.save(f'data/images/output/{uploaded_file.name}')    
+                image_path = os.path.join('result', f'im{i}.jpg')
+                shutil.copy(os.path.join(max(glob("runs/detect/*/"), key=os.path.getmtime),"image0.jpg"), image_path)
+                print(f"Result image saved to {image_path}")
 
-        i+=1
+            
+        i += 1
         print(i)
-    
+        if i >= 1000:
+            break  # limit to 1000 frames
+        
     images = [img for img in os.listdir('result') if img.endswith(".jpg")]
-    temp_vid=uploaded_file.name.split('.')[0]+'.webm'
-    video = cv2.VideoWriter(os.path.join('vid',temp_vid),fourcc=cv2.VideoWriter_fourcc(*'vp80'), fps=5, frameSize=(1280,720), isColor=True)
+    temp_vid = uploaded_file.name.split('.')[0] + '.webm'
+    video = cv2.VideoWriter(os.path.join('vid', temp_vid), fourcc=cv2.VideoWriter_fourcc(*'vp80'), fps=5, frameSize=(1280,720), isColor=True)
     for i in images:
-        im=cv2.imread(os.path.join('result',i))
-        im=cv2.resize(im,(1280,720))
+        im = cv2.imread(os.path.join('result', i))
+        im = cv2.resize(im, (1280,720))
    
         video.write(im)
-        os.remove(os.path.join('result',i))
+        os.remove(os.path.join('result', i))
 
     video.release()
 
@@ -80,10 +84,10 @@ def video_dt(uploaded_file,model):
 
     old_path = os.getcwd()
     os.chdir('zipr')
-    shutil.make_archive(uploaded_file.name.split('.')[0], 'zip',root_dir=os.path.join('vid',temp_vid))
+    shutil.make_archive(uploaded_file.name.split('.')[0], 'zip', root_dir=os.path.join('vid', temp_vid))
     os.chdir(old_path)
-    with ZipFile(os.path.join('zipr',uploaded_file.name.split('.')[0]+'.zip'), "w") as newzip:
-        newzip.write(os.path.join('vid',temp_vid))
+    with ZipFile(os.path.join('zipr', uploaded_file.name.split('.')[0] + '.zip'), "w") as newzip:
+        newzip.write(os.path.join('vid', temp_vid))
 
    
 
@@ -91,22 +95,20 @@ def video_dt(uploaded_file,model):
 
 
 
+
 def upload(model):
-    source  = ( "Image Detection" , "Video Detection" )
+    source  = ( "Image Detection" , "Video Detection", "Multiple Image Detection" )
     source_index  =  st.sidebar.selectbox ( " Select Input ", range (len(source)), format_func=lambda x: source[x])
     if source_index == 0:
         uploaded_file = st.sidebar.file_uploader("Upload Image" , type = [ 'png' , 'jpeg' , 'jpg' ])
         if uploaded_file is not None:
-                is_valid = True
-                with  st . spinner ( text = 'Resource loading...' ):
-                    st.sidebar.image(uploaded_file)
-                    picture = Image.open(uploaded_file)
-                    picture = picture.save(f'data/images/{uploaded_file.name}')
-                
+            is_valid = True
+            with  st . spinner ( text = 'Resource loading...' ):
+                st.sidebar.image(uploaded_file)
+                picture = Image.open(uploaded_file)
+                picture = picture.save(f'data/images/{uploaded_file.name}')
 
-
-
-    else:
+    elif source_index == 1:
         uploaded_file  =  st.sidebar.file_uploader ( " Upload Video" , type = [ 'mp4' ] )
         if uploaded_file is not None:
             is_valid = True
@@ -116,6 +118,19 @@ def upload(model):
                     f.write(uploaded_file.getbuffer()) # save video 
                     f.write(uploaded_file.read())      # save video 
                 
+        else:
+            is_valid = False
+
+    else:
+        uploaded_files = st.sidebar.file_uploader("Upload Multiple Images", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+        if uploaded_files is not None:
+            is_valid = True
+            for uploaded_file in uploaded_files:
+                with st.spinner('Loading image...'):
+                    st.sidebar.image(uploaded_file)
+                    picture = Image.open(uploaded_file)
+                    picture.save(f'data/images/{uploaded_file.name}')
+
         else:
             is_valid = False
 
